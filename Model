@@ -1,0 +1,19 @@
+class ImageAutoEncoder(Model):
+    def __init__(self):
+        super(ImageAutoEncoder, self).__init__()
+        self.encoder = Sequential([
+            Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)),
+            MaxPooling2D((2, 2), padding='same'),
+            Conv2D(16, (3, 3), activation='relu', padding='same'),
+            MaxPooling2D((2, 2), padding='same')
+        ])
+        self.decoder = Sequential([
+            Conv2DTranspose(16, (3, 3), activation='relu', strides=(2, 2), padding='same'),
+            Conv2DTranspose(32, (3, 3), activation='relu', strides=(2, 2), padding='same'),
+            Conv2D(3, (3, 3), activation='sigmoid', padding='same')
+        ])
+
+    def call(self, inputs):
+        encoded = self.encoder(inputs)
+        decoded = self.decoder(encoded)
+        return decoded
