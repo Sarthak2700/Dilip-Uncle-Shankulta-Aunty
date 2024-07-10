@@ -1,0 +1,66 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras import Model, Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose
+from tensorflow.keras.datasets import cifar10
+import matplotlib.pyplot as plt
+
+# Load and preprocess the data
+(x_train, _), (x_test, _) = cifar10.load_data()
+
+# Normalize the data to the range [0, 1]
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+# Define the AutoEncoder model for image data
+class ImageAutoEncoder(Model):
+    def __init__(self):
+        super(ImageAutoEncoder, self).__init__()
+        self.encoder = Sequential([
+            Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)),
+            MaxPooling2D((2, 2), padding='same'),
+            Conv2D(16, (3, 3), activation='relu', padding='same'),
+            MaxPooling2D((2, 2), padding='same')
+        ])
+        self.decoder = Sequential([
+            Conv2DTranspose(16, (3, 3), activation='relu', strides=(2, 2), padding='same'),
+            Conv2DTranspose(32, (3, 3), activation='relu', strides=(2, 2), padding='same'),
+            Conv2D(3, (3, 3), activation='sigmoid', padding='same')
+        ])
+
+    def call(self, inputs):
+        encoded = self.encoder(inputs)
+        decoded = self.decoder(encoded)
+        return decoded
+
+# Create an instance of the model
+image_auto_encoder = ImageAutoEncoder()
+
+# Compile the model
+image_auto_encoder.compile(optimizer='adam', loss='mse')
+
+# Train the model
+history = image_auto_encoder.fit(x_train, x_train, epochs=3, batch_size=256, validation_data=(x_test, x_test))
+
+# Visualize the results
+def plot_results(x_test, decoded_imgs, n=10):
+    plt.figure(figsize=(20, 4))
+    for i in range(n):
+        # Display original
+        ax = plt.subplot(2, n, i + 1)
+        plt.imshow(x_test[i])
+        plt.title("Original")
+        plt.axis("off")
+
+        # Display reconstruction
+        ax = plt.subplot(2, n, i + 1 + n)
+        plt.imshow(decoded_imgs[i])
+        plt.title("Reconstructed")
+        plt.axis("off")
+    plt.show()
+
+# Predict on the test data
+decoded_imgs = image_auto_encoder.predict(x_test)
+
+# Plot the results
+plot_results(x_test, decoded_imgs)
